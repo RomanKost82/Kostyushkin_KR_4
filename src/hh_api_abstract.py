@@ -96,6 +96,7 @@ class HH(VacancyAPI):
                 break
 
 
+
 hh = HH()
 hh.load_vacancies("Python developer")
 hh.save_vacancies("vacancies.json")
