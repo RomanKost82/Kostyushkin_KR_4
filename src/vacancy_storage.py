@@ -1,157 +1,102 @@
-from abc import ABC, abstractmethod
-
-
-class VacancyStorage(ABC):
-    """
-    Абстрактный класс для работы с хранилищем вакансий.
-    """
-
-    @abstractmethod
-    def add_vacancy(self, vacancy):
-        """
-        Метод для добавления вакансии в хранилище.
-        """
-        pass
-
-    @abstractmethod
-    def get_vacancies(self, criteria):
-        """
-        Метод для получения вакансий из хранилища по указанным критериям.
-        """
-        pass
-
-    @abstractmethod
-    def delete_vacancy(self, vacancy_id):
-        """
-        Метод для удаления вакансии из хранилища.
-        """
-        pass
-
-
 import json
 import os
+from abc import ABC, abstractmethod
+from src.vacancy import Vacancy
 
 
-class JSONVacancyStorage(VacancyStorage):
-    def __init__(self, file_name='vacancies_user.json'):
+class VacancyFileHandler(ABC):
+    """
+    Абстрактный класс для работы с файлами вакансий
+    """
+
+    @abstractmethod
+    def add_vacancies(self, vacancies):
+        pass
+
+    @abstractmethod
+    def get_vacancies(self, criteria=None):
+        pass
+
+    @abstractmethod
+    def remove_vacancy(self, vacancy_id):
+        pass
+
+
+class JSONVacancyFileHandler(VacancyFileHandler):
+    """
+    Класс для работы с JSON файлами
+    """
+
+    def __init__(self, file_name='vacancies.json'):
+        self.file_name = os.path.join(os.getcwd(), 'data', file_name)
+        os.makedirs(os.path.dirname(self.file_name), exist_ok=True)
+        print(f"[DEBUG] Инициализирован файл: {self.file_name}")
+
+    def add_vacancies(self, vacancies):
         """
-        Инициализация хранилища вакансий.
-
-        :param file_name: Имя файла для хранения вакансий.
+        Добавляет вакансии в JSON файл, проверяя дубли по id
         """
-        self.file_name = file_name
-        self.vacancies = self.load_vacancies()
+        current_vacancies = self.get_vacancies()
+        print(f"[DEBUG] Текущие вакансии: {current_vacancies}")  # Отладка текущих вакансий
 
-    def load_vacancies(self):
+        # Проверка, что current_vacancies - это список
+        if not isinstance(current_vacancies, list):
+            print("[ERROR] Текущие вакансии не являются списком, сброс значений.")
+            current_vacancies = []  # Сбрасываем в пустой список
+
+        # Используем ключ `id` для словаря
+        vacancy_ids = {vac['id'] for vac in current_vacancies if isinstance(vac, dict) and 'id' in vac}
+
+        new_vacancies = [vac.to_list() for vac in vacancies if vac.id not in vacancy_ids]
+
+        print(f"[DEBUG] Новые вакансии для добавления: {new_vacancies}")  # Отладка новых вакансий
+
+        current_vacancies.extend(new_vacancies)
+
+        try:
+            with open(self.file_name, 'w', encoding='utf-8') as f:
+                json.dump(current_vacancies, f, ensure_ascii=False, indent=4)
+                print(f"[DEBUG] Вакансии успешно сохранены в {self.file_name}")
+        except Exception as e:
+            print(f"[ERROR] Не удалось сохранить файл: {e}")
+
+    def get_vacancies(self, criteria=None):
         """
-        Загрузка вакансий из JSON-файла.
+        Получает вакансии из JSON файла, с возможностью фильтрации
         """
         if os.path.exists(self.file_name):
             with open(self.file_name, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                vacancies = json.load(f)
+                print(f"[DEBUG] Получено {len(vacancies)} вакансий из файла.")  # Отладка количества вакансий
+
+                if criteria:
+                    # Убедитесь, что элементы - это словари, перед применением .get()
+                    filtered_vacancies = [
+                        vac for vac in vacancies
+                        if isinstance(vac, dict) and any(
+                            criteria.lower() in str(value).lower()
+                            for value in vac.values()
+                        )
+                    ]
+                    print(f"[DEBUG] Найдено {len(filtered_vacancies)} вакансий по критерию '{criteria}'.")  # Отладка фильтрации
+                    return filtered_vacancies
+                return vacancies
+
+        print("[DEBUG] Файл не найден, возвращаем пустой список.")  # Отладка отсутствия файла
         return []
 
-
-    def save_vacancies(self):
+    def remove_vacancy(self, vacancy_id):
         """
-        Сохранение вакансий в JSON-файл.
+        Удаляет вакансию по id
         """
-        # Определяем путь к папке 'data' относительно корня проекта
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        data_dir = os.path.join(base_dir, 'data')
+        vacancies = self.get_vacancies()
+        print(f"[DEBUG] Количество вакансий перед удалением: {len(vacancies)}")  # Отладка перед удалением
+        vacancies = [vac for vac in vacancies if vac['id'] != vacancy_id]
+        print(f"[DEBUG] Количество вакансий после удаления: {len(vacancies)}")  # Отладка после удаления
 
-        # Проверяем наличие директории 'data' и создаем, если она отсутствует
-        if not os.path.exists(data_dir):
-            os.makedirs(data_dir)
-
-        # Определяем полный путь к файлу vacancy_user.json
-        file_path = os.path.join(data_dir, self.file_name)
-
-        # Сохранение вакансий в JSON-файл
-        with open(file_path, 'w', encoding='utf-8') as f:
-            json.dump(self.vacancies, f, ensure_ascii=False, indent=4)
-
-        print(f"Вакансии сохранены в файл: {file_path}")
-
-    def add_vacancy(self, vacancy):
-        """
-        Добавление вакансии в хранилище с проверкой на дублирование по ID.
-
-        :param vacancy: Вакансия, которую нужно добавить.
-        """
-        # Проверка на дублирование по ID
-        existing_vacancy = next((v for v in self.vacancies if v.get('id') == vacancy.get('id')), None)
-
-        if existing_vacancy:
-            print(f"Вакансия с ID {vacancy.get('id')} уже существует и не будет добавлена.")
-        else:
-            self.vacancies.append(vacancy)
-            self.save_vacancies()
-            print(f"Вакансия с ID {vacancy.get('id')} добавлена в хранилище.")
-
-    def get_vacancies(self, criteria):
-        """
-        Получение вакансий по заданным критериям.
-
-        :param criteria: Критерии поиска вакансий.
-        :return: Список вакансий, соответствующих критериям.
-        """
-        return [vacancy for vacancy in self.vacancies if criteria in vacancy['title']]
-
-    def delete_vacancy(self, vacancy_id):
-        """
-        Удаление вакансии из хранилища по ID.
-
-        :param vacancy_id: ID вакансии для удаления.
-        """
-        self.vacancies = [vacancy for vacancy in self.vacancies if vacancy.get('id') != vacancy_id]
-        self.save_vacancies()
-
-
-# # Пример вакансий
-# vacancy1 = {
-#     'id': 1,
-#     'title': 'Python Developer',
-#     'url': 'https://example.com/vacancy/1',
-#     'salary_from': 100000,
-#     'salary_to': 150000,
-#     'description': 'Требуется опыт работы с Python.'
-# }
-#
-# vacancy2 = {
-#     'id': 2,
-#     'title': 'Java Developer',
-#     'url': 'https://example.com/vacancy/2',
-#     'salary_from': 120000,
-#     'salary_to': 170000,
-#     'description': 'Требуется опыт работы с Java.'
-# }
-#
-# vacancy3 = {
-#     'id': 2,
-#     'title': 'Java Developer',
-#     'url': 'https://example.com/vacancy/2',
-#     'salary_from': 120000,
-#     'salary_to': 170000,
-#     'description': 'Требуется опыт работы с Java.'
-# }
-#
-# # Создание экземпляра хранилища вакансий
-# storage = JSONVacancyStorage()
-#
-# # Добавление вакансий
-# storage.add_vacancy(vacancy1)
-# storage.add_vacancy(vacancy2)
-#
-# # Получение вакансий по критериям
-# print(storage.get_vacancies('Python'))
-#
-# # Удаление вакансии
-# # storage.delete_vacancy(1)
-#
-# # Проверка оставшихся вакансий
-# print(storage.get_vacancies(''))
-#
-# storage.add_vacancy(vacancy3)
-
-
+        try:
+            with open(self.file_name, 'w', encoding='utf-8') as f:
+                json.dump(vacancies, f, ensure_ascii=False, indent=4)
+                print(f"[DEBUG] Обновленный список вакансий сохранен в {self.file_name}.")
+        except Exception as e:
+            print(f"[ERROR] Не удалось сохранить файл: {e}")
