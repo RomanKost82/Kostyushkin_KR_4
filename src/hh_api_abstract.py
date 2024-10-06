@@ -96,7 +96,7 @@ class HH(VacancyAPI):
                 break
 
 
-
-hh = HH()
-hh.load_vacancies("Python developer")
-hh.save_vacancies("vacancies.json")
+if __name__ == '__main__':
+    hh = HH()
+    hh.load_vacancies("Python developer")
+    hh.save_vacancies("vacancies.json")

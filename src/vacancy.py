@@ -1,7 +1,7 @@
 class Vacancy:
     __slots__ = ['title', 'url', 'salary_from', 'salary_to', 'description']
 
-    def __init__(self, title, url, salary_from=None, salary_to=None, description=""):
+    def __init__(self, title, url, salary_from=0, salary_to=0, description=''):
         """
         Инициализация объекта вакансии.
 
@@ -11,13 +11,15 @@ class Vacancy:
         :param salary_to: Максимальная зарплата (может быть None)
         :param description: Описание или требования к вакансии
         """
+
         self.title = title
         self.url = url
         self.salary_from = self.validate_salary(salary_from)
         self.salary_to = self.validate_salary(salary_to)
         self.description = description
 
-    def validate_salary(self, salary):
+    @staticmethod
+    def validate_salary(salary):
         """
         Метод для валидации зарплаты. Если зарплата не указана, возвращает 0.
         """
@@ -58,14 +60,17 @@ class Vacancy:
         return self < other or self == other
 
 
-# Пример использования
-vacancy1 = Vacancy("Python", "https://hh.ru/vacancy/123456", 100000, 150000,
-                   "Требования: знание Python, Django")
-vacancy2 = Vacancy("Junior Python Developer", "https://hh.ru/vacancy/654321", 70000, 100000,
-                   "Требования: базовые знания Python")
 
-print(vacancy1)
-print(vacancy2)
 
-# Сравнение вакансий
-# print(vacancy1 > vacancy2)  # True, так как у vacancy1 зарплата выше
+
+# # Пример использования
+# vacancy1 = Vacancy("Python", "https://hh.ru/vacancy/123456", 100000, 150000,
+#                    "Требования: знание Python, Django")
+# vacancy2 = Vacancy("Junior Python Developer", "https://hh.ru/vacancy/654321", 70000, 100000,
+#                    "Требования: базовые знания Python")
+#
+# print(vacancy1)
+# print(vacancy2)
+#
+# # Сравнение вакансий
+# # print(vacancy1 > vacancy2)  # True, так как у vacancy1 зарплата выше
