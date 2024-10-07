@@ -85,13 +85,13 @@ class JSONVacancyFileHandler(VacancyFileHandler):
         print("[DEBUG] Файл не найден, возвращаем пустой список.")  # Отладка отсутствия файла
         return []
 
-    def remove_vacancy(self, vacancy_id):
+    def remove_vacancy(self, vacancy_url):
         """
-        Удаляет вакансию по id
+        Удаляет вакансию по URL
         """
         vacancies = self.get_vacancies()
         print(f"[DEBUG] Количество вакансий перед удалением: {len(vacancies)}")  # Отладка перед удалением
-        vacancies = [vac for vac in vacancies if vac['id'] != vacancy_id]
+        vacancies = [vac for vac in vacancies if vac[2] != vacancy_url]  # vac[2] — это URL вакансии
         print(f"[DEBUG] Количество вакансий после удаления: {len(vacancies)}")  # Отладка после удаления
 
         try:
@@ -100,3 +100,16 @@ class JSONVacancyFileHandler(VacancyFileHandler):
                 print(f"[DEBUG] Обновленный список вакансий сохранен в {self.file_name}.")
         except Exception as e:
             print(f"[ERROR] Не удалось сохранить файл: {e}")
+
+    def clear_vacancies(self):
+        """
+        Очищает файл вакансий
+        """
+        try:
+            with open(self.file_name, 'w', encoding='utf-8') as f:
+                json.dump([], f, ensure_ascii=False, indent=4)  # Сохраняем пустой список
+                print(f"[DEBUG] Файл {self.file_name} успешно очищен.")
+        except Exception as e:
+            print(f"[ERROR] Не удалось очистить файл: {e}")
+
+

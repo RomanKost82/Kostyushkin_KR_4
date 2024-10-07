@@ -14,7 +14,8 @@ def user_interaction():
         print("\n1. Ввести поисковый запрос для вакансий")
         print("2. Получить топ N вакансий по зарплате")
         print("3. Найти вакансии по ключевому слову в любом поле")
-        print("4. Удалить вакансию по ID")
+        print("4. Удалить вакансию по URL")
+        print("5. Очистить запрос по вакансиям")
         print("0. Выйти")
 
         choice = input("Выберите действие: ")
@@ -117,10 +118,20 @@ def user_interaction():
                     print(f"Название: {vac[1]}, Зарплата: {vac[3]}-{vac[4]}, Ссылка: {vac[2]}")
 
 
+
         elif choice == '4':
-            vacancy_id = input("Введите ID вакансии для удаления: ")
-            file_handler.remove_vacancy(vacancy_id)
-            print(f"Вакансия с ID {vacancy_id} удалена.")
+            vacancy_url = input("Введите URL вакансии для удаления: ")
+            file_handler.remove_vacancy(vacancy_url)
+            print(f"Вакансия с URL {vacancy_url} удалена.")
+
+
+        elif choice == '5':
+            confirm = input("Вы уверены, что хотите очистить все вакансии? (да/нет): ").lower()
+            if confirm == 'да':
+                file_handler.clear_vacancies()  # Вызов метода очистки
+            else:
+                print("Очистка отменена.")
+
 
         elif choice == '0':
             print("Выход из программы.")
